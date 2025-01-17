@@ -162,6 +162,23 @@
   </div>
 
   <script>
+        document.addEventListener("DOMContentLoaded", () => {
+        console.log("Page loaded. Checking microphone permissions...");
+
+        navigator.permissions.query({ name: "microphone" })
+            .then((status) => {
+                console.log("Microphone permission status:", status.state);
+            });
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then((stream) => {
+                console.log("Microphone access granted. Stream:", stream);
+                // Start transcription or handle the stream
+            })
+            .catch((error) => {
+                console.error("Error accessing microphone:", error);
+            });
+    });
     if (!('webkitSpeechRecognition' in window)) {
       alert('Sorry, your browser does not support the Web Speech API. Please use Chrome or Edge.');
     } else {
