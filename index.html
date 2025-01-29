@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Transcription</title>
+  <title>Live Transcription Tool</title>
   <style>
     @font-face {
       font-family: 'OpenDyslexic';
@@ -34,6 +34,8 @@
       border-radius: 8px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       color: #2e7d32;
+      line-height: 1.6;
+      white-space: pre-wrap;
     }
     button {
       padding: 10px 20px;
@@ -72,36 +74,17 @@
       cursor: not-allowed;
       box-shadow: none;
     }
-    .monitor-container {
+    .visualizer-container {
+      margin-top: 20px;
       text-align: center;
-      margin-bottom: 10px;
     }
-    .bar-container {
+    canvas {
+      display: block;
       width: 100%;
-      background: #ccc;
-      border-radius: 5px;
       height: 20px;
-      position: relative;
-      margin: 10px 0;
-    }
-    .bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(to right, #4CAF50, #81C784);
-      border-radius: 5px;
-      transition: width 0.2s;
-    }
-    .slider-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .slider-container label {
-      margin-bottom: 5px;
-      font-size: 1em;
-    }
-    .slider {
-      width: 80%;
+      background: rgb(255, 255, 255);
+      border-radius: 8px;
+      margin: 0 auto;
     }
     .controls {
       display: flex;
@@ -109,9 +92,13 @@
       justify-content: space-around;
       margin-top: 20px;
     }
-    select, input[type="number"] {
+    .controls select, .controls input {
       padding: 5px;
       font-size: 1em;
+    }
+    .controls label {
+      display: block;
+      margin-bottom: 5px;
     }
   </style>
 </head>
@@ -141,44 +128,20 @@
     </div>
     <div>
       <label for="font-size">Font Size:</label>
-      <input type="number" id="font-size" min="12" max="36" value="18">
+      <input type="number" id="font-size" min="12" max="72" value="18">
     </div>
     <div>
       <label for="keywords">Keywords:</label>
       <input type="text" id="keywords" placeholder="Enter keywords">
     </div>
   </div>
+  <div class="visualizer-container">
+    <canvas id="visualizer"></canvas>
+  </div>
   <div class="transcription" id="transcription"></div>
 
-  <div class="monitor-container">
-    <h2>Input Monitor</h2>
-    <div class="bar-container">
-      <div class="bar" id="input-bar"></div>
-    </div>
-    <div class="slider-container">
-      <label for="mic-level">Adjust Microphone Input Level</label>
-      <input type="range" id="mic-level" class="slider" min="0" max="1" step="0.01" value="0.5">
-    </div>
-  </div>
 
   <script>
-        document.addEventListener("DOMContentLoaded", () => {
-        console.log("Page loaded. Checking microphone permissions...");
-
-        navigator.permissions.query({ name: "microphone" })
-            .then((status) => {
-                console.log("Microphone permission status:", status.state);
-            });
-
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then((stream) => {
-                console.log("Microphone access granted. Stream:", stream);
-                // Start transcription or handle the stream
-            })
-            .catch((error) => {
-                console.error("Error accessing microphone:", error);
-            });
-    });
     if (!('webkitSpeechRecognition' in window)) {
       alert('Sorry, your browser does not support the Web Speech API. Please use Chrome or Edge.');
     } else {
@@ -187,18 +150,61 @@
       const stopButton = document.getElementById('stop');
       const saveButton = document.getElementById('save');
       const transcriptionDiv = document.getElementById('transcription');
-      const inputBar = document.getElementById('input-bar');
-      const micLevelSlider = document.getElementById('mic-level');
+      const canvas = document.getElementById('visualizer');
+      const ctx = canvas.getContext('2d');
       const fontSelect = document.getElementById('font-select');
       const fontSizeInput = document.getElementById('font-size');
       const languageSelect = document.getElementById('language-select');
       const keywordsInput = document.getElementById('keywords');
 
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+      canvas.width = window.innerWidth * 0.8;
+      canvas.height = 200;
 
+      let audioContext;
+      let analyser;
+      let microphone;
+      let dataArray;
+      let animationId;
       let fullTranscription = '';
+
+      function drawVisualizer() {
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / analyser.frequencyBinCount) * 2.5;
+        let barHeight;
+        let x = 0;
+
+        for (let i = 0; i < analyser.frequencyBinCount; i++) {
+          barHeight = dataArray[i];
+          ctx.fillStyle = `rgb(52, 155, ${barHeight + 100})`;
+          ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
+          x += barWidth + 1;
+        }
+
+        animationId = requestAnimationFrame(drawVisualizer);
+      }
+
+      function startVisualizer() {
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then(stream => {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            drawVisualizer();
+          })
+          .catch(err => console.error('Error accessing microphone:', err));
+      }
 
       function highlightKeywords(text) {
         const keywords = keywordsInput.value.split(',').map(kw => kw.trim());
@@ -209,40 +215,23 @@
         return text;
       }
 
-      function simulateInputVolume() {
-        const randomLevel = Math.random() * 100;
-        inputBar.style.width = randomLevel + '%';
-      }
-
-      function getFormattedDate() {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true };
-        return now.toLocaleDateString('en-US', options).replace(/,/g, '').replace(/ /g, '-');
-      }
-
-      setInterval(simulateInputVolume, 200);
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
       recognition.onresult = (event) => {
-        let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             const finalText = event.results[i][0].transcript;
             fullTranscription += finalText + ' ';
-            transcript += `<span>${highlightKeywords(finalText)}</span> `;
-          } else {
-            transcript += `<span style="color: gray;">${event.results[i][0].transcript}</span>`;
+            transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
           }
         }
-        transcriptionDiv.innerHTML = transcript;
-        transcriptionDiv.style.height = `${transcriptionDiv.scrollHeight}px`;
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
       };
 
       startButton.addEventListener('click', () => {
         recognition.start();
+        startVisualizer();
         startButton.disabled = true;
         startButton.classList.add('disabled');
         stopButton.disabled = false;
@@ -252,6 +241,7 @@
 
       stopButton.addEventListener('click', () => {
         recognition.stop();
+        cancelAnimationFrame(animationId);
         startButton.disabled = false;
         startButton.classList.remove('disabled');
         stopButton.disabled = true;
@@ -263,7 +253,7 @@
         const blob = new Blob([fullTranscription], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${getFormattedDate()}.txt`;
+        a.download = `transcription-${new Date().toISOString()}.txt`;
         a.click();
       });
 
@@ -281,11 +271,6 @@
 
       keywordsInput.addEventListener('input', () => {
         transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
-      });
-
-      micLevelSlider.addEventListener('input', (event) => {
-        const level = event.target.value;
-        console.log('Microphone level set to:', level);
       });
     }
   </script>
