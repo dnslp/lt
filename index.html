@@ -223,12 +223,12 @@
     </div>
     <div class="transcription" id="transcription"></div>
 
-    <div class="monitor-container">
+    <!-- <div class="monitor-container">
         <div class="slider-container">
             <label for="mic-level">Adjust Microphone Input Level</label>
             <input type="range" id="mic-level" class="slider" min="0" max="1" step="0.01" value="0.7">
         </div>
-    </div>
+    </div> -->
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -352,10 +352,10 @@
                 transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
             });
 
-            micLevelSlider.addEventListener('input', (event) => {
-                const level = event.target.value;
-                // console.log('Microphone level set to:', level);
-            });
+            // micLevelSlider.addEventListener('input', (event) => {
+            //     const level = event.target.value;
+            //     // console.log('Microphone level set to:', level);
+            // });
         }
     </script>
 </body>
