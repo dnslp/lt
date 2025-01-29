@@ -1,278 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Transcription Tool</title>
-  <style>
-    @font-face {
-      font-family: 'OpenDyslexic';
-      src: url('OpenDyslexic3-Regular.ttf') format('truetype');
-    }
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: linear-gradient(to bottom, #f4f4f4, #e0e0e0);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .transcription {
-      border: 2px solid #4CAF50;
-      padding: 15px;
-      margin-top: 20px;
-      max-height: 300px;
-      overflow-y: auto;
-      background-color: #e8f5e9;
-      font-size: 1.2em;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      color: #2e7d32;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1em;
-      margin: 5px;
-      cursor: pointer;
-      border: none;
-      border-radius: 5px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: background-color 0.3s, transform 0.2s;
-    }
-    button:active {
-      transform: scale(0.98);
-    }
-    button#start {
-      background-color: #4CAF50;
-      color: white;
-      opacity: 1;
-      transition: opacity 0.3s;
-    }
-    button#start.disabled {
-      opacity: 0.5;
-    }
-    button#stop {
-      background-color: #f44336;
-      color: white;
-      opacity: 0.8;
-      transition: opacity 0.3s;
-    }
-    button#stop.active {
-      opacity: 1;
-      box-shadow: 0 0 12px rgba(244, 67, 54, 0.8);
-    }
-    button:disabled {
-      background-color: #ddd;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .visualizer-container {
-      margin-top: 20px;
-      text-align: center;
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      height: 20px;
-      background: rgb(255, 255, 255);
-      border-radius: 8px;
-      margin: 0 auto;
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-around;
-      margin-top: 20px;
-    }
-    .controls select, .controls input {
-      padding: 5px;
-      font-size: 1em;
-    }
-    .controls label {
-      display: block;
-      margin-bottom: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Transcription</title>
+    <style>
+        @font-face {
+            font-family: 'OpenDyslexic';
+            src: url('OpenDyslexic3-Regular.ttf') format('truetype');
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(to bottom, #f4f4f4, #e0e0e0);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .transcription {
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #e8f5e9;
+            font-size: 1.2em;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            color: #2e7d32;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button#start {
+            background-color: #4CAF50;
+            color: white;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        button#start.disabled {
+            opacity: 0.5;
+        }
+
+        button#stop {
+            background-color: #f44336;
+            color: white;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        button#stop.active {
+            opacity: 1;
+            box-shadow: 0 0 12px rgba(244, 67, 54, 0.8);
+        }
+
+        button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .monitor-container {
+            text-align: center;
+            margin-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        .bar-container {
+            width: 100%;
+            background: #ccc;
+            border-radius: 5px;
+            height: 20px;
+            position: relative;
+            margin: 10px 0;
+        }
+
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #4CAF50, #174b1a);
+            border-radius: 5px;
+            transition: width 0.2s;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+
+        .slider-container label {
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .slider {
+            width: 80%;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 20px;
+            font-size: large;
+        }
+
+        select,
+        input[type="number"] {
+            padding: 5px;
+            font-size: 1em;
+        }
+        select,
+        input[type="text"] {
+            padding: 5px;
+            font-size: 1em;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            background: linear-gradient(to right, #4CAF50, #224d24);
+            border-radius: 10px;
+            outline: none;
+            transition: background 0.3s ease;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: background 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #81C784;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            transition: background 0.3s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            background: #81C784;
+        }
+    </style>
 </head>
+
 <body>
-  <h1>Live Transcription</h1>
-  <div style="text-align: center;">
-    <button id="start">Start</button>
-    <button id="stop" disabled>Stop</button>
-    <button id="save" disabled>Save Transcription</button>
-  </div>
-  <div class="controls">
-    <div>
-      <label for="language-select">Language:</label>
-      <select id="language-select">
-        <option value="en-US" selected>English (US)</option>
-        <option value="es-ES">Spanish (Spain)</option>
-        <option value="fr-FR">French (France)</option>
-      </select>
+    <h1>Live Transcription</h1>
+    <div style="text-align: center;">
+        <button id="start">Start</button>
+        <button id="stop" disabled>Stop</button>
+        <button id="save" disabled>Save Transcription</button>
     </div>
-    <div>
-      <label for="font-select">Font:</label>
-      <select id="font-select">
-        <option value="Arial" selected>Arial</option>
-        <option value="OpenDyslexic">OpenDyslexic</option>
-        <option value="Courier New">Courier New</option>
-      </select>
+    <div class="controls">
+        <div>
+            <label for="language-select">Language:</label>
+            <select id="language-select">
+                <option value="en-US" selected>English (US)</option>
+                <option value="es-ES">Spanish (Spain)</option>
+                <option value="fr-FR">French (France)</option>
+            </select>
+        </div>
+        <div>
+            <label for="font-select">Font:</label>
+            <select id="font-select">
+                <option value="Arial" selected>Arial</option>
+                <option value="OpenDyslexic">OpenDyslexic</option>
+                <option value="Courier New">Courier New</option>
+            </select>
+        </div>
+        <div>
+            <label for="font-size">Font Size:</label>
+            <input type="number" id="font-size" min="12" max="56" value="24">
+        </div>
+        <div>
+            <label for="keywords">Keywords:</label>
+            <input type="text" id="keywords" placeholder="Enter keywords">
+        </div>
     </div>
-    <div>
-      <label for="font-size">Font Size:</label>
-      <input type="number" id="font-size" min="12" max="72" value="18">
+    <div class="transcription" id="transcription"></div>
+
+    <div class="monitor-container">
+        <!-- <h2>Input Monitor</h2>
+    <div class="bar-container">
+      <div class="bar" id="input-bar"></div>
+    </div> -->
+        <div class="slider-container">
+            <label for="mic-level">Adjust Microphone Input Level</label>
+            <input type="range" id="mic-level" class="slider" min="0" max="1" step="0.01" value="0.5">
+        </div>
     </div>
-    <div>
-      <label for="keywords">Keywords:</label>
-      <input type="text" id="keywords" placeholder="Enter keywords">
-    </div>
-  </div>
-  <div class="visualizer-container">
-    <canvas id="visualizer"></canvas>
-  </div>
-  <div class="transcription" id="transcription"></div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Page loaded. Checking microphone permissions...");
 
-  <script>
-    if (!('webkitSpeechRecognition' in window)) {
-      alert('Sorry, your browser does not support the Web Speech API. Please use Chrome or Edge.');
-    } else {
-      const recognition = new webkitSpeechRecognition();
-      const startButton = document.getElementById('start');
-      const stopButton = document.getElementById('stop');
-      const saveButton = document.getElementById('save');
-      const transcriptionDiv = document.getElementById('transcription');
-      const canvas = document.getElementById('visualizer');
-      const ctx = canvas.getContext('2d');
-      const fontSelect = document.getElementById('font-select');
-      const fontSizeInput = document.getElementById('font-size');
-      const languageSelect = document.getElementById('language-select');
-      const keywordsInput = document.getElementById('keywords');
+            navigator.permissions.query({ name: "microphone" })
+                .then((status) => {
+                    console.log("Microphone permission status:", status.state);
+                });
 
-      canvas.width = window.innerWidth * 0.8;
-      canvas.height = 200;
-
-      let audioContext;
-      let analyser;
-      let microphone;
-      let dataArray;
-      let animationId;
-      let fullTranscription = '';
-
-      function drawVisualizer() {
-        analyser.getByteFrequencyData(dataArray);
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const barWidth = (canvas.width / analyser.frequencyBinCount) * 2.5;
-        let barHeight;
-        let x = 0;
-
-        for (let i = 0; i < analyser.frequencyBinCount; i++) {
-          barHeight = dataArray[i];
-          ctx.fillStyle = `rgb(52, 155, ${barHeight + 100})`;
-          ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-          x += barWidth + 1;
-        }
-
-        animationId = requestAnimationFrame(drawVisualizer);
-      }
-
-      function startVisualizer() {
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-          .then(stream => {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-
-            microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
-
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-
-            drawVisualizer();
-          })
-          .catch(err => console.error('Error accessing microphone:', err));
-      }
-
-      function highlightKeywords(text) {
-        const keywords = keywordsInput.value.split(',').map(kw => kw.trim());
-        keywords.forEach(keyword => {
-          const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-          text = text.replace(regex, `<mark>${keyword}</mark>`);
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then((stream) => {
+                    console.log("Microphone access granted. Stream:", stream);
+                    // Start transcription or handle the stream
+                })
+                .catch((error) => {
+                    console.error("Error accessing microphone:", error);
+                });
         });
-        return text;
-      }
+        if (!('webkitSpeechRecognition' in window)) {
+            alert('Sorry, your browser does not support the Web Speech API. Please use Chrome or Edge.');
+        } else {
+            const recognition = new webkitSpeechRecognition();
+            const startButton = document.getElementById('start');
+            const stopButton = document.getElementById('stop');
+            const saveButton = document.getElementById('save');
+            const transcriptionDiv = document.getElementById('transcription');
+            const inputBar = document.getElementById('input-bar');
+            const micLevelSlider = document.getElementById('mic-level');
+            const fontSelect = document.getElementById('font-select');
+            const fontSizeInput = document.getElementById('font-size');
+            const languageSelect = document.getElementById('language-select');
+            const keywordsInput = document.getElementById('keywords');
 
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
 
-      recognition.onresult = (event) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            const finalText = event.results[i][0].transcript;
-            fullTranscription += finalText + ' ';
-            transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
-          }
+            let fullTranscription = '';
+
+            function highlightKeywords(text) {
+                const keywords = keywordsInput.value.split(',').map(kw => kw.trim());
+                keywords.forEach(keyword => {
+                    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                    text = text.replace(regex, `<mark>${keyword}</mark>`);
+                });
+                return text;
+            }
+
+            function simulateInputVolume() {
+                const randomLevel = Math.random() * 100;
+                inputBar.style.width = randomLevel + '%';
+            }
+
+            function getFormattedDate() {
+                const now = new Date();
+                const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true };
+                return now.toLocaleDateString('en-US', options).replace(/,/g, '').replace(/ /g, '-');
+            }
+
+            setInterval(simulateInputVolume, 200);
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        // Append final results to the full transcription
+                        const finalText = event.results[i][0].transcript;
+                        fullTranscription += finalText + ' ';
+                        finalTranscript += `<span>${highlightKeywords(finalText)}</span> `;
+                    } else {
+                        // Handle interim results (temporary)
+                        interimTranscript += `<span style="color: gray;">${event.results[i][0].transcript}</span> `;
+                    }
+                }
+
+                // Display the full transcription + interim results
+                transcriptionDiv.innerHTML = highlightKeywords(fullTranscription) + interimTranscript;
+                transcriptionDiv.scrollTop = transcriptionDiv.scrollHeight; // Auto-scroll to the bottom
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+            };
+
+            startButton.addEventListener('click', () => {
+                recognition.start();
+                startButton.disabled = true;
+                startButton.classList.add('disabled');
+                stopButton.disabled = false;
+                stopButton.classList.add('active');
+                saveButton.disabled = true;
+            });
+
+            stopButton.addEventListener('click', () => {
+                recognition.stop();
+                startButton.disabled = false;
+                startButton.classList.remove('disabled');
+                stopButton.disabled = true;
+                stopButton.classList.remove('active');
+                saveButton.disabled = false;
+            });
+
+            saveButton.addEventListener('click', () => {
+                const blob = new Blob([fullTranscription], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${getFormattedDate()}.txt`;
+                a.click();
+            });
+
+            fontSelect.addEventListener('change', (event) => {
+                transcriptionDiv.style.fontFamily = event.target.value;
+            });
+
+            fontSizeInput.addEventListener('input', (event) => {
+                transcriptionDiv.style.fontSize = `${event.target.value}px`;
+            });
+
+            languageSelect.addEventListener('change', (event) => {
+                recognition.lang = event.target.value;
+            });
+
+            keywordsInput.addEventListener('input', () => {
+                transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
+            });
+
+            micLevelSlider.addEventListener('input', (event) => {
+                const level = event.target.value;
+                console.log('Microphone level set to:', level);
+            });
         }
-      };
-
-      startButton.addEventListener('click', () => {
-        recognition.start();
-        startVisualizer();
-        startButton.disabled = true;
-        startButton.classList.add('disabled');
-        stopButton.disabled = false;
-        stopButton.classList.add('active');
-        saveButton.disabled = true;
-      });
-
-      stopButton.addEventListener('click', () => {
-        recognition.stop();
-        cancelAnimationFrame(animationId);
-        startButton.disabled = false;
-        startButton.classList.remove('disabled');
-        stopButton.disabled = true;
-        stopButton.classList.remove('active');
-        saveButton.disabled = false;
-      });
-
-      saveButton.addEventListener('click', () => {
-        const blob = new Blob([fullTranscription], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `transcription-${new Date().toISOString()}.txt`;
-        a.click();
-      });
-
-      fontSelect.addEventListener('change', (event) => {
-        transcriptionDiv.style.fontFamily = event.target.value;
-      });
-
-      fontSizeInput.addEventListener('input', (event) => {
-        transcriptionDiv.style.fontSize = `${event.target.value}px`;
-      });
-
-      languageSelect.addEventListener('change', (event) => {
-        recognition.lang = event.target.value;
-      });
-
-      keywordsInput.addEventListener('input', () => {
-        transcriptionDiv.innerHTML = highlightKeywords(fullTranscription);
-      });
-    }
-  </script>
+    </script>
 </body>
+
 </html>
