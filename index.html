@@ -182,6 +182,9 @@
         input[type="range"]::-moz-range-thumb:hover {
             background: #81C784;
         }
+        #save{
+            background-color:#ffd504
+        }
     </style>
 </head>
 
@@ -221,13 +224,9 @@
     <div class="transcription" id="transcription"></div>
 
     <div class="monitor-container">
-        <!-- <h2>Input Monitor</h2>
-    <div class="bar-container">
-      <div class="bar" id="input-bar"></div>
-    </div> -->
         <div class="slider-container">
             <label for="mic-level">Adjust Microphone Input Level</label>
-            <input type="range" id="mic-level" class="slider" min="0" max="1" step="0.01" value="0.5">
+            <input type="range" id="mic-level" class="slider" min="0" max="1" step="0.01" value="0.7">
         </div>
     </div>
 
@@ -257,7 +256,6 @@
             const stopButton = document.getElementById('stop');
             const saveButton = document.getElementById('save');
             const transcriptionDiv = document.getElementById('transcription');
-            const inputBar = document.getElementById('input-bar');
             const micLevelSlider = document.getElementById('mic-level');
             const fontSelect = document.getElementById('font-select');
             const fontSizeInput = document.getElementById('font-size');
@@ -279,18 +277,13 @@
                 return text;
             }
 
-            function simulateInputVolume() {
-                const randomLevel = Math.random() * 100;
-                inputBar.style.width = randomLevel + '%';
-            }
-
             function getFormattedDate() {
                 const now = new Date();
                 const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true };
                 return now.toLocaleDateString('en-US', options).replace(/,/g, '').replace(/ /g, '-');
             }
 
-            setInterval(simulateInputVolume, 200);
+
 
             recognition.onresult = (event) => {
                 let interimTranscript = '';
@@ -361,7 +354,7 @@
 
             micLevelSlider.addEventListener('input', (event) => {
                 const level = event.target.value;
-                console.log('Microphone level set to:', level);
+                // console.log('Microphone level set to:', level);
             });
         }
     </script>
